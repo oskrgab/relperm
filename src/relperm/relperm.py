@@ -29,7 +29,7 @@ def sw_thomeer(pc, ift_res, cos_theta_res, swi_th, pce_th, g_th):
             if pc / (ift_res * cos_theta_res) < pce_th
             else swi_th
             + (1 - swi_th)
-            * dec(1 - exp(g_th / dec(log(pce_th / pc / (ift_res * cos_theta_res))))),
+            * (1 - exp(dec(g_th) / dec(log(pce_th / pc / (ift_res * cos_theta_res))))),
         ),
     )
 
@@ -60,7 +60,7 @@ def sw_brooks_corey(pc, ift_res, cos_theta_res, swi_bc, pce_bc, n_bc):
             0,
             swi_bc
             + (1 - swi_bc)
-            * dec(pow((pce_bc / (pc / (ift_res * cos_theta_res))), (1 / n_bc))),
+            * pow((pce_bc / (pc / (ift_res * cos_theta_res))), (1 / n_bc)),
         ),
     )
 
