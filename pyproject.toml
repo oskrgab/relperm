@@ -15,4 +15,51 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "ruff>=0.14.10",
+    "ty>=0.0.5",
 ]
+
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# Enable specific rule sets favorable for scientific & maintainable code:
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort (Import sorting - crucial for readability)
+    "B",    # flake8-bugbear (Catches subtle bugs)
+    "UP",   # pyupgrade (Keeps your syntax modern, e.g. type | union)
+    "N",    # pep8-naming (Enforces standard naming conventions)
+    "D",    # pydocstyle (Enforces docstrings - MANDATORY for scientific refs)
+    "NPY",  # NumPy-specific rules (Since you depend on numpy)
+    "PT",   # flake8-pytest-style (Better testing practices)
+    "RUF",  # Ruff-specific rules
+    "SIM",  # flake8-simplify (Helps agents write concise code)
+    # "ANN", # flake8-annotations (Uncomment this when you are ready to enforce typing everywhere)
+]
+
+# Ignore specific rules that conflict with common scientific notation
+ignore = [
+    "D100", # Missing docstring in public module (optional, but good to have)
+    "D104", # Missing docstring in public package
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+
+[tool.ty.environment]
+# Target Python version (aligns with your project requires-python)
+python-version = "3.12"
+
+[tool.ty.rules]
+# "check" usually implies running all default rules, but you can be specific:
+# For scientific code, we generally want strict typing on mathematical functions.
+# If you find 'ty' too noisy, you can downgrade specific rules to "warn"
