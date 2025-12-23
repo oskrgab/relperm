@@ -90,3 +90,6 @@ GEMINI.md
 # Documentation
 docs/_build/
 site/
+
+.spec-workflow/
+.mcp.json

@@ -154,19 +154,6 @@ jobs:
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      # Alternatively, use this one
-      # - name: Mint token
-      #   id: mint
-      #   uses: tschm/token-mint-action@v1.0.3
-
-      #  Requires poetry to be installed
-      # - name: Install Poetry
-      #   uses: snok/install-poetry@v1
-
-      # - name: Publish the package with poetry
-      #   run: |
-      #     poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}'
-
   github_release:
     name: Create GitHub Release
     needs: [setup_and_build, details]
@@ -198,3 +185,41 @@ jobs:
             --title "${{ needs.details.outputs.tag_name }}" \
             --generate-notes \
             $PRERELEASE_FLAG
+
+  deploy_docs:
+    name: Deploy Documentation to GitHub Pages
+    needs: [test, details]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages  # yamllint disable-line rule:environment-name-format
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build documentation
+        run: uv run mkdocs build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

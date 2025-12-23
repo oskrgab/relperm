@@ -28,9 +28,10 @@ def s_eff(
     $$S_{eff} = \frac{S_w - S_{wr}}{1 - S_{wr} - S_{nwr}}$$
 
     where:
-    - $S_w$ is the wetting phase saturation.
-    - $S_{wr}$ is the residual wetting phase saturation.
-    - $S_{nwr}$ is the residual non-wetting phase saturation.
+
+    - $S_w$: Wetting phase saturation.
+    - $S_{wr}$: Residual wetting phase saturation.
+    - $S_{nwr}$: Residual non-wetting phase saturation.
     """
     s_eff_array = (sw - swr) / (1 - swr - snwr)
 
@@ -58,12 +59,13 @@ def krw(
 
     Notes
     -----
-    The relative permeability of the wetting phase ($k_{rw}$) is calculated using the 
+    The relative permeability of the wetting phase ($k_{rw}$) is calculated using the
     Corey model:
 
     $$k_{rw} = k_{rw0} \cdot S_{eff}^{n_w}$$
 
     where:
+
     - $k_{rw0}$ is the endpoint relative permeability for the wetting phase.
     - $S_{eff}$ is the effective wetting phase saturation.
     - $n_w$ is the Corey exponent for the wetting phase.
