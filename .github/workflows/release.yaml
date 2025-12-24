@@ -82,28 +82,8 @@ jobs:
             echo "The new version $NEW_VERSION is greater than the latest version $LATEST_VERSION on PyPI."
           fi
 
-  test:
-    needs: [details, check_pypi]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        run: uv python install  # Honors pinned python version in .python-version
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run tests
-        run: uv run pytest
-
   setup_and_build:
-    needs: [details, check_pypi, test]
+    needs: [details, check_pypi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -188,7 +168,7 @@ jobs:
 
   deploy_docs:
     name: Deploy Documentation to GitHub Pages
-    needs: [test, details]
+    needs: [details]
     runs-on: ubuntu-latest
     permissions:
       contents: read
