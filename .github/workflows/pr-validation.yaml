@@ -1,0 +1,103 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  validate-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR source branch
+        run: |
+          TARGET_BRANCH="${{ github.base_ref }}"
+          SOURCE_BRANCH="${{ github.head_ref }}"
+
+          echo "PR: $SOURCE_BRANCH → $TARGET_BRANCH"
+          echo ""
+
+          # ============================================================
+          # PRs to main: Only allow dev and hotfix/* branches
+          # ============================================================
+          if [ "$TARGET_BRANCH" = "main" ]; then
+            # Allow dev branch (normal release workflow)
+            if [ "$SOURCE_BRANCH" = "dev" ]; then
+              echo "✅ Release PR: dev → main"
+              exit 0
+            fi
+
+            # Allow hotfix/* branches (emergency production fixes)
+            if [[ "$SOURCE_BRANCH" =~ ^hotfix/ ]]; then
+              echo "✅ Hotfix PR: $SOURCE_BRANCH → main (emergency fix)"
+              echo ""
+              echo "⚠️  REMINDER: After merging, sync hotfix back to dev:"
+              echo "   git checkout dev && git merge main && git push origin dev"
+              exit 0
+            fi
+
+            # Block feature/* branches
+            if [[ "$SOURCE_BRANCH" =~ ^feature/ ]]; then
+              echo "❌ Error: Feature branches cannot merge directly to main"
+              echo "   Current: $SOURCE_BRANCH → main"
+              echo ""
+              echo "Correct workflow:"
+              echo "   1. Create PR: $SOURCE_BRANCH → dev"
+              echo "   2. After testing in dev, create release PR: dev → main"
+              exit 1
+            fi
+
+            # Block bugfix/* branches
+            if [[ "$SOURCE_BRANCH" =~ ^bugfix/ ]]; then
+              echo "❌ Error: Bugfix branches cannot merge directly to main"
+              echo "   Current: $SOURCE_BRANCH → main"
+              echo ""
+              echo "Correct workflow:"
+              echo "   1. Create PR: $SOURCE_BRANCH → dev (test with other changes)"
+              echo "   2. After testing in dev, create release PR: dev → main"
+              echo ""
+              echo "💡 TIP: For production emergencies, use hotfix/* branches instead"
+              exit 1
+            fi
+
+            # Block any other branch
+            echo "❌ Error: PRs to main must come from dev or hotfix/* branches"
+            echo "   Current: $SOURCE_BRANCH → main"
+            echo ""
+            echo "Allowed sources for main:"
+            echo "   • dev (normal releases)"
+            echo "   • hotfix/* (emergency production fixes)"
+            exit 1
+          fi
+
+          # ============================================================
+          # PRs to dev: Recommend feature/bugfix/refactor branches
+          # ============================================================
+          if [ "$TARGET_BRANCH" = "dev" ]; then
+            # Allow main → dev (syncing after hotfix)
+            if [ "$SOURCE_BRANCH" = "main" ]; then
+              echo "✅ Sync PR: main → dev (syncing hotfix)"
+              exit 0
+            fi
+
+            # Check for standard branch prefixes
+            if [[ "$SOURCE_BRANCH" =~ ^(feature|bugfix|refactor)/ ]]; then
+              echo "✅ Development PR: $SOURCE_BRANCH → dev"
+              exit 0
+            fi
+
+            # Warn about non-standard branch names
+            echo "⚠️  Warning: PRs to dev should use standard branch prefixes"
+            echo "   Current: $SOURCE_BRANCH → dev"
+            echo ""
+            echo "Recommended prefixes:"
+            echo "   • feature/*  - New features"
+            echo "   • bugfix/*   - Bug fixes"
+            echo "   • refactor/* - Code improvements"
+            echo ""
+            echo "✅ Validation passed (warning only)"
+            exit 0
+          fi
+
+          echo "✅ PR validation passed"
