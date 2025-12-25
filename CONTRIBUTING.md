@@ -49,11 +49,19 @@ This project is intended to be a welcoming space for collaboration. We expect al
    uv sync  # Installs all dependencies including dev dependencies
    ```
 
-4. **Verify your setup:**
+4. **Install pre-commit hooks** (IMPORTANT):
+   ```bash
+   uv run pre-commit install
+   ```
+
+   This installs git hooks that automatically check code quality before each commit and **prevent accidental commits to protected branches** (`main` and `dev`).
+
+5. **Verify your setup:**
    ```bash
    uv run pytest              # Run tests
    uv run ruff check .        # Check code quality
    uv run ty check            # Type check
+   uv run pre-commit run --all-files  # Test pre-commit hooks
    ```
 
 ### Optional: Git Aliases for Easier Workflow
@@ -77,6 +85,76 @@ Usage:
 git feature my-new-feature    # Creates feature/my-new-feature from updated dev
 git sync                      # Updates local dev
 git cleanup                   # Deletes merged feature branches
+```
+
+### Pre-commit Hooks: Your First Line of Defense
+
+Pre-commit hooks run **automatically before each commit** to catch issues early.
+
+**What's checked:**
+
+1. **Branch protection** - Blocks commits to `main` and `dev` (forces feature branch workflow)
+2. **Code formatting** - Auto-formats with ruff
+3. **Linting** - Auto-fixes common issues with ruff
+4. **Type checking** - Validates types with ty
+5. **File hygiene** - Removes trailing whitespace, fixes line endings
+6. **YAML/TOML validation** - Checks workflow files and pyproject.toml
+7. **Spell checking** - Catches typos with codespell
+
+**Normal workflow:**
+
+```bash
+git checkout -b feature/my-feature
+# ... make changes ...
+git add .
+git commit -m "Add feature"
+
+# Pre-commit runs automatically:
+# ✅ All checks pass → commit succeeds
+# ❌ Any check fails → commit blocked, files may be auto-fixed
+```
+
+**If hooks auto-fix files:**
+
+```bash
+git commit -m "Add feature"
+# ruff-format............Failed
+# - files were modified by this hook
+
+# Ruff reformatted your code, re-add and commit:
+git add .
+git commit -m "Add feature"
+# ✅ Passes this time
+```
+
+**Protection from mistakes:**
+
+```bash
+# ❌ Trying to commit on protected branch
+git checkout main
+git commit -m "oops"
+
+# Output:
+# no-commit-to-branch........Failed
+# You're attempting to commit on branch 'main'
+# Committing directly to 'main' is not allowed.
+
+# ✅ Use feature branches instead
+git checkout -b feature/my-fix
+git commit -m "Add fix"  # Works!
+```
+
+**Skip hooks temporarily (use sparingly!):**
+
+```bash
+git commit --no-verify  # Bypasses pre-commit hooks
+# WARNING: CI will still catch issues, and you can't push to main/dev anyway!
+```
+
+**Update hooks to latest versions:**
+
+```bash
+uv run pre-commit autoupdate
 ```
 
 ## Development Workflow
@@ -133,12 +211,25 @@ Use these prefixes for your branches:
    - Commit frequently (commit message quality doesn't matter - we squash merge)
 
 3. **Run quality checks locally:**
+
+   **Option A: Let pre-commit handle it (recommended)**
+   ```bash
+   git add .
+   git commit -m "Add feature"
+   # Pre-commit automatically runs: ruff format, ruff check, ty check
+   # You still need to run tests manually:
+   uv run pytest --cov=relperm
+   ```
+
+   **Option B: Run checks manually before committing**
    ```bash
    uv run ruff format .                   # Auto-format code
    uv run ruff check --fix .              # Fix linting issues
    uv run ty check                        # Type check
    uv run pytest --cov=relperm            # Run tests with coverage
    ```
+
+   **Note:** Tests are NOT run by pre-commit hooks (too slow). Always run tests manually before pushing.
 
 4. **Push and create PR to `dev`:**
    ```bash
@@ -187,7 +278,9 @@ Use these prefixes for your branches:
 
 ### Recovery: Accidentally Committed to Local Main/Dev
 
-If you commit to local `main` or `dev` by mistake:
+**Note:** Pre-commit hooks should prevent this! If you're seeing this scenario, make sure you installed pre-commit hooks with `uv run pre-commit install`.
+
+If you somehow bypassed pre-commit hooks (or didn't install them) and committed to `main` or `dev`:
 
 ```bash
 # 1. Check what commits you made
@@ -442,19 +535,36 @@ Documentation is automatically deployed to GitHub Pages on release.
 
 ### Before Creating a PR
 
-1. **Run all quality checks locally:**
+1. **Ensure pre-commit hooks are installed:**
    ```bash
-   uv run ruff format .
-   uv run ruff check --fix .
-   uv run ty check
+   uv run pre-commit install  # If you haven't already
+   ```
+
+2. **Commit your changes** (pre-commit hooks run automatically):
+   ```bash
+   git add .
+   git commit -m "Clear description of changes"
+   # Pre-commit runs: format, lint, type check, branch protection
+   ```
+
+3. **Run tests manually** (not covered by pre-commit):
+   ```bash
    uv run pytest --cov=relperm
    ```
 
-2. **Ensure all tests pass** and **coverage is >90%**
+4. **Ensure all tests pass** and **coverage is >90%**
 
-3. **Update documentation** if you changed the API
+5. **Update documentation** if you changed the API
 
-4. **Add examples** to docstrings for new functions
+6. **Add examples** to docstrings for new functions
+
+**Alternative:** Run all checks manually before committing:
+```bash
+uv run ruff format .
+uv run ruff check --fix .
+uv run ty check
+uv run pytest --cov=relperm
+```
 
 ### Creating a PR
 
@@ -477,6 +587,9 @@ Documentation is automatically deployed to GitHub Pages on release.
 ### PR Review Process
 
 - **Automated checks** will run: `test`, `lint`, `validate-source-branch`
+  - If you used pre-commit hooks, `lint` should already pass!
+  - `test` checks ensure coverage is >90%
+  - `validate-source-branch` confirms you're targeting the correct branch
 - **All checks must pass** before merging
 - **Maintainers will review** code quality, tests, and documentation
 - **Address feedback** by pushing new commits to your branch
@@ -520,6 +633,12 @@ uv run ruff format .                       # Format code
 uv run ruff check --fix .                  # Lint and auto-fix
 uv run ty check                            # Type check
 uv run mkdocs serve                        # Preview docs locally
+
+# Pre-commit hooks
+uv run pre-commit install                  # Install git hooks (one-time setup)
+uv run pre-commit run --all-files          # Run all hooks on all files
+uv run pre-commit autoupdate               # Update hooks to latest versions
+git commit --no-verify                     # Skip pre-commit hooks (emergency only)
 
 # Git workflow
 git checkout dev                           # Switch to dev
